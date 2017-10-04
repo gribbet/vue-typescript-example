@@ -2,8 +2,8 @@ import Vue from "vue";
 import Component from "vue-class-component";
 
 interface Widget {
-    id: number,
-    name: string
+    id: number;
+    name: string;
 }
 
 interface WidgetService {
@@ -60,31 +60,40 @@ Vue.component("widget", WidgetVue);
         </div>`
 })
 class WidgetsVue extends Vue {
-    widgetService = new DummyWidgetService()
-    widgets: Widget[] = []
+    private widgetService = new DummyWidgetService();
+
+    private widgets: Widget[] = [];
+
+    private async update() {
+        this.widgets = await this.widgetService.list();
+    }
+
     onRemove(widget: Widget) {
         return async () => {
             await this.widgetService.delete(widget.id);
             await this.update();
         }
     }
+
     async onNew() {
         await this.widgetService.save({ id: Math.random(), name: "Test" });
         await this.update();
     }
-    async update() {
-        this.widgets = await this.widgetService.list();
-    }
+
     created() {
         this.update();
     }
 }
 Vue.component("widgets", WidgetsVue);
 
-new Vue({
-    el: "#application",
+@Component({
     template: `
         <div id="application">
             <widgets />
         </div>`
 })
+class Application extends Vue {}
+
+new Application({
+    el: "#application"
+});
