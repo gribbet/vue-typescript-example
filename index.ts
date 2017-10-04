@@ -12,71 +12,70 @@ interface WidgetService {
     delete(id: number): Promise<void>;
 }
 
-function delay(time: number): Promise<void> {
-    return new Promise(resolve => setTimeout(() => resolve(), time));
-}
-
 class DummyWidgetService implements WidgetService {
     private widgets: Widget[] = [
         { id: Math.random(), name: "Test" },
         { id: Math.random(), name: "Test2" }
     ];
+    private dummyWait = () =>
+        new Promise(resolve => setTimeout(() => resolve(), 250));
 
     async save(widget: Widget) {
-        await delay(100);
+        await this.dummyWait();
         this.widgets = this.widgets
             .concat(widget);
     }
 
     async list(): Promise<Widget[]> {
-        await delay(100);
+        await this.dummyWait();
         return this.widgets.slice(0);
     }
 
     async delete(id: number) {
-        await delay(100);
+        await this.dummyWait();
         this.widgets = this.widgets
             .filter(_ => _.id !== id);
     }
 }
+
+const widgetService: WidgetService = new DummyWidgetService();
 
 @Component({
     template: `
         <div class="widget">
             {{widget.id}}
             {{widget.name}}
-            <button v-on:click="remove">Remove</button>
+            <button v-on:click="onDelete">Delete</button>
         </div>`,
-    props: ["widget", "remove"]
+    props: ["widget", "on-update"]
 })
-class WidgetVue extends Vue { }
+class WidgetVue extends Vue {
+    widget: Widget;
+    onUpdate: () => Promise<void>;
+
+    async onDelete() {
+        await widgetService.delete(this.widget.id);
+        await this.onUpdate();
+    }
+}
 Vue.component("widget", WidgetVue);
 
 @Component({
     template: `
         <div class="widgets">
             <button v-on:click="onNew">New</button>
-            <widget v-for="widget in widgets" :key="widget.id" :widget="widget" :remove="onRemove(widget)" />
+            <widget v-for="widget in widgets" :key="widget.id" :widget="widget" :on-update="update" />
         </div>`
 })
 class WidgetsVue extends Vue {
-    private widgetService = new DummyWidgetService();
+    widgets: Widget[] = [];
 
-    private widgets: Widget[] = [];
-
-    private async update() {
-        this.widgets = await this.widgetService.list();
-    }
-
-    onRemove(widget: Widget) {
-        return async () => {
-            await this.widgetService.delete(widget.id);
-            await this.update();
-        }
+    async update() {
+        this.widgets = await widgetService.list();
     }
 
     async onNew() {
-        await this.widgetService.save({ id: Math.random(), name: "Test" });
+        await widgetService.save({ id: Math.random(), name: "Test" });
         await this.update();
     }
 
@@ -92,7 +91,7 @@ Vue.component("widgets", WidgetsVue);
             <widgets />
         </div>`
 })
-class Application extends Vue {}
+class Application extends Vue { }
 
 new Application({
     el: "#application"
