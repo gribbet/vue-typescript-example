@@ -1,3 +1,6 @@
+const webpack = require("webpack");
+const path = require("path");
+
 module.exports = {
 	devtool: "source-map",
 	entry: "./index.ts",
@@ -5,7 +8,10 @@ module.exports = {
 		filename: "index.js"
 	},
 	resolve: {
-		extensions: [".js", ".ts"]
+		extensions: [".js", ".ts"],
+		alias: {
+			"vue$": "vue/dist/vue.esm.js"
+		}
 	},
 	module: {
 		rules: [{
